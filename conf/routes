@@ -11,3 +11,11 @@ GET     /message                    controllers.AsyncController.message
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)
+
+# Balances Controller actions regarding operations
+
+POST /operations/deposit            controllers.BalancesController.deposit
+
+POST /operations/withdrawal         controllers.BalancesController.withdrawal
+
+POST /operations/purchase           controllers.BalancesController.purchase
