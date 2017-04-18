@@ -10,5 +10,6 @@ libraryDependencies += jdbc
 libraryDependencies += cache
 libraryDependencies += ws
 libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.0" % Test
+libraryDependencies += "com.google.code.gson" % "gson" % "2.2.4"
 
 
