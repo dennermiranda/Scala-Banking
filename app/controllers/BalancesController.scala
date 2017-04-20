@@ -3,9 +3,11 @@ package controllers
 import javax.inject.{Inject, Singleton}
 
 import models._
+import org.joda.time.DateTime
 import play.api._
-import play.api.libs.json.{JsError, Json}
+import play.api.libs.json.{JsError, JsPath, Json, Reads}
 import play.api.mvc._
+import play.api.libs.functional.syntax._
 
 /**
   * Created by Dener on 18/04/2017.
@@ -13,6 +15,26 @@ import play.api.mvc._
 
 @Singleton
 class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
+  implicit val depositReads: Reads[Deposit] = (
+    (JsPath \ "accountNumber").read[Int] and
+      (JsPath \ "value").read[Double] and
+      (JsPath \ "date").read[DateTime] and
+      (JsPath \ "description").read[String]
+    )(Deposit.apply _)
+
+  implicit val purchaseReads: Reads[Purchase] = (
+    (JsPath \ "accountNumber").read[Int] and
+      (JsPath \ "value").read[Double] and
+      (JsPath \ "date").read[DateTime] and
+      (JsPath \ "description").read[String]
+    )(Purchase.apply _)
+
+  implicit val withdrawalReads: Reads[Withdrawal] = (
+    (JsPath \ "accountNumber").read[Int] and
+      (JsPath \ "value").read[Double] and
+      (JsPath \ "date").read[DateTime] and
+      (JsPath \ "description").read[String]
+    )(Withdrawal.apply _)
 
   def deposit = Action(BodyParsers.parse.json){ request =>
     val depositResult = request.body.validate[Deposit]
