@@ -12,6 +12,7 @@ import play.api.mvc._
 class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
 
   def deposit = Action{ request =>
+
     Ok
   }
 
