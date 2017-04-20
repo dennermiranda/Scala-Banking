@@ -10,6 +10,7 @@ import scala.collection.immutable.TreeMap
   */
 class BalancesDAO {
   var accountsMap = Map[Int, TreeMap[DateTime, Operation]]()
+  implicit def ord: Ordering[DateTime] = Ordering.fromLessThan(_ isBefore _)
 
   def addOperation(operation: Operation) : TreeMap[DateTime, Operation] = {
 
@@ -26,12 +27,10 @@ class BalancesDAO {
         return uOperation
       }
     }
+  }
 
-    def getOperations(accountNumber: Int) : Option[TreeMap[DateTime, Operation]] = {
-      accountsMap.get(accountNumber)
-    }
-
-    return null;
+  def getOperations(accountNumber: Int) : Option[TreeMap[DateTime, Operation]] = {
+    accountsMap.get(accountNumber)
   }
 
 }

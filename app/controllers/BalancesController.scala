@@ -9,7 +9,7 @@ import play.api.mvc._
   */
 
 @Singleton
-class BalancesController @Inject() extends Controller{
+class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
 
   def deposit = Action{ request =>
     Ok
