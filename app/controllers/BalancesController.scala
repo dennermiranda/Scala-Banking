@@ -5,7 +5,7 @@ import javax.inject.{Inject, Singleton}
 import models._
 import org.joda.time.DateTime
 import play.api._
-import play.api.libs.json.{JsError, JsPath, Json, Reads}
+import play.api.libs.json._
 import play.api.mvc._
 import play.api.libs.functional.syntax._
 
@@ -35,6 +35,27 @@ class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
       (JsPath \ "date").read[DateTime] and
       (JsPath \ "description").read[String]
     )(Withdrawal.apply _)
+
+  implicit val depositWrites: Writes[Deposit] = (
+    (JsPath \ "accountNumber").write[Int] and
+      (JsPath \ "value").write[Double] and
+      (JsPath \ "date").write[DateTime] and
+      (JsPath \ "description").write[String]
+    )(unlift(Deposit.unapply))
+
+  implicit val purchaseWrites: Writes[Purchase] = (
+    (JsPath \ "accountNumber").write[Int] and
+      (JsPath \ "value").write[Double] and
+      (JsPath \ "date").write[DateTime] and
+      (JsPath \ "description").write[String]
+    )(unlift(Purchase.unapply))
+
+  implicit val withdrawalWrites: Writes[Withdrawal] = (
+    (JsPath \ "accountNumber").write[Int] and
+      (JsPath \ "value").write[Double] and
+      (JsPath \ "date").write[DateTime] and
+      (JsPath \ "description").write[String]
+    )(unlift(Withdrawal.unapply))
 
   def deposit = Action(BodyParsers.parse.json){ request =>
     val depositResult = request.body.validate[Deposit]
