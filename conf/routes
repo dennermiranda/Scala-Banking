@@ -23,3 +23,5 @@ POST /operations/purchase               controllers.BalancesController.purchase
 GET /balance/:accountNumber             controllers.BalancesController.balance(accountNumber: Int)
 
 GET /statement/:accountNumber/:from/:to controllers.BalancesController.statement(accountNumber: Int, from: String, to: String)
+
+GET /debt/:accountNumber                controllers.BalanceController.debtPeriods(accountNumber: Int)

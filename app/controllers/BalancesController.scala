@@ -148,6 +148,48 @@ class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
     }
   }
 
+  def debtPeriods(accountNumber: Int) = Action {
+    var amount = 0.0
+    var currentDebt = 0.0
+    var currentStart:DateTime = null
+    var responseArray = List[JsObject]()
+    dao.getOperations(accountNumber) match {
+      case Some(dates) =>
+        val previousAmount = amount
+        dates.foreach(operations => {
+          amount = getBalanceAmount(amount, operations)
+          if(amount<0.0){
+            if(currentStart!= null){
+              if(amount!=currentDebt){
+                val debt = Json.obj("start" -> currentStart, "end" -> operations._1.minusDays(1).toString(dateFormat),"principal"-> currentDebt)
+                responseArray = debt :: responseArray
+                currentDebt = amount
+                currentStart = operations._1
+              }
+            }else{
+              currentDebt = amount
+              currentStart = operations._1
+            }
+          }else{
+            if(currentStart!=null){
+              val debt = Json.obj("start" -> currentStart, "end" -> operations._1.minusDays(1).toString(dateFormat),"principal"-> currentDebt)
+              responseArray = debt :: responseArray
+              currentDebt = 0.0
+              currentStart = null
+            }
+          }
+        })
+        if(currentStart!=null){
+          val debt = Json.obj("start" -> currentStart,"principal"-> currentDebt)
+          responseArray = debt :: responseArray
+        }
+        Ok(Json.obj("dates" -> Json.toJsFieldJsValueWrapper(responseArray.reverse)))
+
+      case None =>
+        BadRequest(Json.obj("status" ->"KO", "message" -> "The account doesn't exist or doesn't have operations"))
+    }
+  }
+
   def getOperationJson(operation: Operation): JsObject = {
     var operationType = ""
     operation match {
