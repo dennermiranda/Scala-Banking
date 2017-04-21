@@ -121,7 +121,7 @@ class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
         Ok(Json.obj("status" ->"OK", "message" -> ("Balance; '"+amount+"' saved."), "balance" -> amount ))
       }
       case None =>{
-        BadRequest((Json.obj("status" ->"KO", "message" -> "The account doesn't exist or doesn't have operations")))
+        BadRequest(Json.obj("status" ->"KO", "message" -> "The account doesn't exist or doesn't have operations"))
       }
     }
   }
@@ -130,24 +130,38 @@ class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
     val fromDate = DateTime.parse(from, DateTimeFormat.forPattern(dateFormat))
     val toDate = DateTime.parse(to, DateTimeFormat.forPattern(dateFormat))
     var amount = 0.0
-
+    var responseArray = List[JsObject]()
     dao.getOperations(accountNumber) match {
       case Some(dates) =>{
         dates.foreach(operations => {
           amount = getBalanceAmount(amount, operations)
           if(checkRange(fromDate, toDate, operations)){
-
+            var operationsJson = List[JsObject]()
+            operations._2.foreach(operation => {
+              val operationJson: JsObject = getOperationJson(operation)
+              operationsJson = operationJson :: operationsJson
+            })
+            val jsonDate = Json.obj("date" -> operations._1.toString(dateFormat), "operations" -> Json.toJsFieldJsValueWrapper(operationsJson), "balance" -> amount)
+            responseArray = jsonDate :: responseArray
           }
         })
+        Ok(Json.obj("dates" -> Json.toJsFieldJsValueWrapper(responseArray.reverse)))
       }
       case None =>
+        BadRequest(Json.obj("status" ->"KO", "message" -> "The account doesn't exist or doesn't have operations"))
     }
-
-
-    Ok(Json.obj("status" ->"OK", "message" -> ("From/to; '"+toDate.toString()+"' saved.")))
   }
 
-
+  def getOperationJson(operation: Operation): JsObject = {
+    var operationType = ""
+    operation match {
+      case Purchase(accountNumber, value, date, description) => operationType = "purchase"
+      case Deposit(accountNumber, value, date, description) => operationType = "deposit"
+      case Withdrawal(accountNumber, value, date, description) => operationType = "Withdrawal"
+    }
+    val operationJson = Json.obj("type" -> operationType, "description" -> operation.description, "value" -> operation.value)
+    operationJson
+  }
   private def getBalanceAmount(valAmount: Double, operations: (DateTime, List[Operation])): Double = {
     var amount = valAmount
     operations._2.foreach(operation => operation match {
