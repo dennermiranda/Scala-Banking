@@ -5,7 +5,6 @@ import javax.inject.{Inject, Singleton}
 import models._
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
-import play.api._
 import play.api.libs.json._
 import play.api.mvc._
 import play.api.libs.functional.syntax._
@@ -88,7 +87,7 @@ class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
     val purchaseResult = request.body.validate[Purchase]
     purchaseResult.fold(
       errors =>{
-        BadRequest((Json.obj("status" ->"KO", "message" -> JsError.toJson(errors))))
+        BadRequest(Json.obj("status" ->"KO", "message" -> JsError.toJson(errors)))
       },
       purchase =>{
         dao.addOperation(purchase)
@@ -101,7 +100,7 @@ class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
     val withdrawalResult = request.body.validate[Withdrawal]
     withdrawalResult.fold(
       errors =>{
-        BadRequest((Json.obj("status" ->"KO", "message" -> JsError.toJson(errors))))
+        BadRequest(Json.obj("status" ->"KO", "message" -> JsError.toJson(errors)))
       },
       withdrawal =>{
         dao.addOperation(withdrawal)
@@ -114,15 +113,13 @@ class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
     val operationsOption = dao.getOperations(accountNumber)
     var amount = 0.0
     operationsOption match {
-      case Some(dates) =>{
+      case Some(dates) =>
         dates.foreach(operations => {
           amount = getBalanceAmount(amount, operations)
         })
         Ok(Json.obj("status" ->"OK", "message" -> ("Balance; '"+amount+"' saved."), "balance" -> amount ))
-      }
-      case None =>{
+      case None =>
         BadRequest(Json.obj("status" ->"KO", "message" -> "The account doesn't exist or doesn't have operations"))
-      }
     }
   }
 
@@ -132,7 +129,7 @@ class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
     var amount = 0.0
     var responseArray = List[JsObject]()
     dao.getOperations(accountNumber) match {
-      case Some(dates) =>{
+      case Some(dates) =>
         dates.foreach(operations => {
           amount = getBalanceAmount(amount, operations)
           if(checkRange(fromDate, toDate, operations)){
@@ -146,7 +143,6 @@ class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
           }
         })
         Ok(Json.obj("dates" -> Json.toJsFieldJsValueWrapper(responseArray.reverse)))
-      }
       case None =>
         BadRequest(Json.obj("status" ->"KO", "message" -> "The account doesn't exist or doesn't have operations"))
     }
@@ -155,20 +151,20 @@ class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
   def getOperationJson(operation: Operation): JsObject = {
     var operationType = ""
     operation match {
-      case Purchase(accountNumber, value, date, description) => operationType = "purchase"
-      case Deposit(accountNumber, value, date, description) => operationType = "deposit"
-      case Withdrawal(accountNumber, value, date, description) => operationType = "Withdrawal"
+      case Purchase(_, _, _, _) => operationType = "purchase"
+      case Deposit(_, _, _, _) => operationType = "deposit"
+      case Withdrawal(_, _, _, _) => operationType = "Withdrawal"
     }
     val operationJson = Json.obj("type" -> operationType, "description" -> operation.description, "value" -> operation.value)
     operationJson
   }
   private def getBalanceAmount(valAmount: Double, operations: (DateTime, List[Operation])): Double = {
     var amount = valAmount
-    operations._2.foreach(operation => operation match {
-      case Purchase(accountNumber, value, date, description) => amount -= value
-      case Deposit(accountNumber, value, date, description) => amount += value
-      case Withdrawal(accountNumber, value, date, description) => amount -= value
-    })
+    operations._2.foreach {
+      case Purchase(_, value, _, _) => amount -= value
+      case Deposit(_, value, _, _) => amount += value
+      case Withdrawal(_, value, _, _) => amount -= value
+    }
     amount
   }
 
