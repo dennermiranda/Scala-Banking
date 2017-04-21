@@ -116,21 +116,14 @@ class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
     operationsOption match {
       case Some(dates) =>{
         dates.foreach(operations => {
-          operations._2.foreach(operation => operation match {
-            case Purchase(accountNumber, value, date, description) => amount -= value
-            case Deposit(accountNumber, value, date, description) => amount += value
-            case Withdrawal(accountNumber, value, date, description) => amount -= value
-          })
+          amount = getBalanceAmount(amount, operations)
         })
-
-        Logger.debug(dates.size.toString)
         Ok(Json.obj("status" ->"OK", "message" -> ("Balance; '"+amount+"' saved."), "balance" -> amount ))
       }
       case None =>{
         BadRequest((Json.obj("status" ->"KO", "message" -> "The account doesn't exist or doesn't have operations")))
       }
     }
-
   }
 
   def statement(accountNumber: Int, from: String, to: String) = Action {

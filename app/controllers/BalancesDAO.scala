@@ -17,13 +17,6 @@ class BalancesDAO {
 
     accountsMap.get(operation.accountNumber) match {
       case Some(dates) => {
-//        Logger.debug("There are operations: " + operations.size.toString)
-//        accountsMap = accountsMap - operation.accountNumber
-//        val uOperation1 = TreeMap[DateTime, Operation](operation.date -> operation)
-//        val uOperation2 = operations ++ uOperation1
-//        accountsMap = accountsMap + (operation.accountNumber -> uOperation2)
-//        Logger.debug("There are operations: " + uOperation2.size.toString)
-//        return uOperation2
         dates.get(operation.date) match {
           case Some(date) =>{
             val newDate = operation :: date
@@ -41,7 +34,6 @@ class BalancesDAO {
         }
       }
       case None => {
-        Logger.debug("First operation")
         val operations = List[Operation](operation)
         val dates = TreeMap[DateTime, List[Operation]](operation.date -> operations)
         accountsMap = accountsMap + (operation.accountNumber -> dates)
