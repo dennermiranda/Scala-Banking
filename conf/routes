@@ -14,8 +14,12 @@ GET     /assets/*file               controllers.Assets.versioned(path="/public",
 
 # Balances Controller actions regarding operations
 
-POST /operations/deposit            controllers.BalancesController.deposit
+POST /operations/deposit                controllers.BalancesController.deposit
 
-POST /operations/withdrawal         controllers.BalancesController.withdrawal
+POST /operations/withdrawal             controllers.BalancesController.withdrawal
 
-POST /operations/purchase           controllers.BalancesController.purchase
+POST /operations/purchase               controllers.BalancesController.purchase
+
+GET /balance/:accountNumber             controllers.BalancesController.balance(accountNumber: Int)
+
+GET /statement/:accountNumber/:from/:to controllers.BalancesController.statement(accountNumber: Int, from: String, to: String)
