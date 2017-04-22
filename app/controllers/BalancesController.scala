@@ -155,13 +155,12 @@ class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
     var responseArray = List[JsObject]()
     dao.getOperations(accountNumber) match {
       case Some(dates) =>
-        val previousAmount = amount
         dates.foreach(operations => {
           amount = getBalanceAmount(amount, operations)
           if(amount<0.0){
             if(currentStart!= null){
               if(amount!=currentDebt){
-                val debt = Json.obj("start" -> currentStart, "end" -> operations._1.minusDays(1).toString(dateFormat),"principal"-> currentDebt)
+                val debt = Json.obj("start" -> currentStart.toString(dateFormat), "end" -> operations._1.minusDays(1).toString(dateFormat),"principal"-> currentDebt)
                 responseArray = debt :: responseArray
                 currentDebt = amount
                 currentStart = operations._1
@@ -172,7 +171,7 @@ class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
             }
           }else{
             if(currentStart!=null){
-              val debt = Json.obj("start" -> currentStart, "end" -> operations._1.minusDays(1).toString(dateFormat),"principal"-> currentDebt)
+              val debt = Json.obj("start" -> currentStart.toString(dateFormat), "end" -> operations._1.minusDays(1).toString(dateFormat),"principal"-> currentDebt)
               responseArray = debt :: responseArray
               currentDebt = 0.0
               currentStart = null
@@ -180,7 +179,7 @@ class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
           }
         })
         if(currentStart!=null){
-          val debt = Json.obj("start" -> currentStart,"principal"-> currentDebt)
+          val debt = Json.obj("start" -> currentStart.toString(dateFormat),"principal"-> currentDebt)
           responseArray = debt :: responseArray
         }
         Ok(Json.obj("dates" -> Json.toJsFieldJsValueWrapper(responseArray.reverse)))

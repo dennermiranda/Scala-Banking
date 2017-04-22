@@ -24,4 +24,4 @@ GET /balance/:accountNumber             controllers.BalancesController.balance(a
 
 GET /statement/:accountNumber/:from/:to controllers.BalancesController.statement(accountNumber: Int, from: String, to: String)
 
-GET /debt/:accountNumber                controllers.BalanceController.debtPeriods(accountNumber: Int)
+GET /debt/:accountNumber                controllers.BalancesController.debtPeriods(accountNumber: Int)
