@@ -113,7 +113,6 @@ class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
 
   def balance(accountNumber: Int) = Action {
     val operationsOption = dao.getOperations(accountNumber)
-    var amount = 0.0
     operationsOption match {
       case Some(dates) =>
         val balanceAmount = dates.map(operations => getBalanceAmountR(0.0, operations._2)).sum
@@ -126,7 +125,6 @@ class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
   def statement(accountNumber: Int, from: String, to: String) = Action {
     val fromDate = DateTime.parse(from, DateTimeFormat.forPattern(dateFormat))
     val toDate = DateTime.parse(to, DateTimeFormat.forPattern(dateFormat))
-    var amount = 0.0
     var responseArray = List[JsObject]()
     dao.getOperations(accountNumber) match {
       case Some(dates) =>
@@ -199,15 +197,7 @@ class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
     val operationJson = Json.obj("type" -> operationType, "description" -> operation.description, "value" -> operation.value)
     operationJson
   }
-  private def getBalanceAmount(valAmount: Double, operations: (DateTime, List[Operation])): Double = {
-    var amount = valAmount
-    operations._2.foreach {
-      case Purchase(_, value, _, _) => amount -= value
-      case Deposit(_, value, _, _) => amount += value
-      case Withdrawal(_, value, _, _) => amount -= value
-    }
-    amount
-  }
+
   @tailrec
   private def getBalanceAmountR(valAmount: Double, operations: List[Operation]): Double = operations match{
     case Purchase(_, value, _, _):: tail =>getBalanceAmountR(valAmount - value, tail)
