@@ -9,6 +9,8 @@ import play.api.libs.json._
 import play.api.mvc._
 import play.api.libs.functional.syntax._
 
+import scala.annotation.tailrec
+
 /**
   * Created by Dener on 18/04/2017.
   */
@@ -114,10 +116,8 @@ class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
     var amount = 0.0
     operationsOption match {
       case Some(dates) =>
-        dates.foreach(operations => {
-          amount = getBalanceAmount(amount, operations)
-        })
-        Ok(Json.obj("status" ->"OK", "message" -> ("Balance; '"+amount+"' saved."), "balance" -> amount ))
+        val balanceAmount = dates.map(operations => getBalanceAmountR(0.0, operations._2)).sum
+        Ok(Json.obj("status" ->"OK", "message" -> ("Balance; '"+balanceAmount), "balance" -> balanceAmount ))
       case None =>
         BadRequest(Json.obj("status" ->"KO", "message" -> "The account doesn't exist or doesn't have operations"))
     }
@@ -131,14 +131,14 @@ class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
     dao.getOperations(accountNumber) match {
       case Some(dates) =>
         dates.foreach(operations => {
-          amount = getBalanceAmount(amount, operations)
+          val balanceAmount = dates.map(operations => getBalanceAmountR(0.0, operations._2)).sum
           if(checkRange(fromDate, toDate, operations)){
             var operationsJson = List[JsObject]()
             operations._2.foreach(operation => {
               val operationJson: JsObject = getOperationJson(operation)
               operationsJson = operationJson :: operationsJson
             })
-            val jsonDate = Json.obj("date" -> operations._1.toString(dateFormat), "operations" -> Json.toJsFieldJsValueWrapper(operationsJson), "balance" -> amount)
+            val jsonDate = Json.obj("date" -> operations._1.toString(dateFormat), "operations" -> Json.toJsFieldJsValueWrapper(operationsJson), "balance" -> balanceAmount)
             responseArray = jsonDate :: responseArray
           }
         })
@@ -156,17 +156,17 @@ class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
     dao.getOperations(accountNumber) match {
       case Some(dates) =>
         dates.foreach(operations => {
-          amount = getBalanceAmount(amount, operations)
-          if(amount<0.0){
+          val balanceAmount = dates.map(operations => getBalanceAmountR(0.0, operations._2)).sum
+          if(balanceAmount<0.0){
             if(currentStart!= null){
-              if(amount!=currentDebt){
+              if(balanceAmount!=currentDebt){
                 val debt = Json.obj("start" -> currentStart.toString(dateFormat), "end" -> operations._1.minusDays(1).toString(dateFormat),"principal"-> currentDebt)
                 responseArray = debt :: responseArray
-                currentDebt = amount
+                currentDebt = balanceAmount
                 currentStart = operations._1
               }
             }else{
-              currentDebt = amount
+              currentDebt = balanceAmount
               currentStart = operations._1
             }
           }else{
@@ -207,6 +207,13 @@ class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
       case Withdrawal(_, value, _, _) => amount -= value
     }
     amount
+  }
+  @tailrec
+  private def getBalanceAmountR(valAmount: Double, operations: List[Operation]): Double = operations match{
+    case Purchase(_, value, _, _):: tail =>getBalanceAmountR(valAmount - value, tail)
+    case Deposit(_, value, _, _):: tail =>getBalanceAmountR(valAmount + value, tail)
+    case Withdrawal(_, value, _, _)::tail =>getBalanceAmountR(valAmount - value, tail)
+    case _ => valAmount
   }
 
   private def checkRange(fromDate: DateTime, toDate: DateTime, operations: (DateTime, List[Operation])): Boolean = {
