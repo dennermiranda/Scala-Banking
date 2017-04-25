@@ -7,7 +7,7 @@ import org.joda.time.DateTime
   */
 abstract class Operation(){
   def accountNumber: Int
-  def value: Double
+  def value: BigDecimal
   def date: DateTime
   def description: String
 }

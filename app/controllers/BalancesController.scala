@@ -32,42 +32,42 @@ class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
 
   implicit val depositReads: Reads[Deposit] = (
     (JsPath \ "accountNumber").read[Int] and
-      (JsPath \ "value").read[Double] and
+      (JsPath \ "value").read[BigDecimal] and
       (JsPath \ "date").read[DateTime](jodaDateReads) and
       (JsPath \ "description").read[String]
     )(Deposit.apply _)
 
   implicit val purchaseReads: Reads[Purchase] = (
     (JsPath \ "accountNumber").read[Int] and
-      (JsPath \ "value").read[Double] and
+      (JsPath \ "value").read[BigDecimal] and
       (JsPath \ "date").read[DateTime](jodaDateReads) and
       (JsPath \ "description").read[String]
     )(Purchase.apply _)
 
   implicit val withdrawalReads: Reads[Withdrawal] = (
     (JsPath \ "accountNumber").read[Int] and
-      (JsPath \ "value").read[Double] and
+      (JsPath \ "value").read[BigDecimal] and
       (JsPath \ "date").read[DateTime](jodaDateReads) and
       (JsPath \ "description").read[String]
     )(Withdrawal.apply _)
 
   implicit val depositWrites: Writes[Deposit] = (
     (JsPath \ "accountNumber").write[Int] and
-      (JsPath \ "value").write[Double] and
+      (JsPath \ "value").write[BigDecimal] and
       (JsPath \ "date").write[DateTime](jodaDateWrites) and
       (JsPath \ "description").write[String]
     )(unlift(Deposit.unapply))
 
   implicit val purchaseWrites: Writes[Purchase] = (
     (JsPath \ "accountNumber").write[Int] and
-      (JsPath \ "value").write[Double] and
+      (JsPath \ "value").write[BigDecimal] and
       (JsPath \ "date").write[DateTime](jodaDateWrites) and
       (JsPath \ "description").write[String]
     )(unlift(Purchase.unapply))
 
   implicit val withdrawalWrites: Writes[Withdrawal] = (
     (JsPath \ "accountNumber").write[Int] and
-      (JsPath \ "value").write[Double] and
+      (JsPath \ "value").write[BigDecimal] and
       (JsPath \ "date").write[DateTime](jodaDateWrites) and
       (JsPath \ "description").write[String]
     )(unlift(Withdrawal.unapply))
@@ -126,10 +126,11 @@ class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
     val fromDate = DateTime.parse(from, DateTimeFormat.forPattern(dateFormat))
     val toDate = DateTime.parse(to, DateTimeFormat.forPattern(dateFormat))
     var responseArray = List[JsObject]()
+    var balanceAmount: BigDecimal = 0
     dao.getOperations(accountNumber) match {
       case Some(dates) =>
         dates.foreach(operations => {
-          val balanceAmount = dates.map(operations => getBalanceAmountR(0.0, operations._2)).sum
+          balanceAmount = getBalanceAmountR(balanceAmount, operations._2)
           if(checkRange(fromDate, toDate, operations)){
             var operationsJson = List[JsObject]()
             operations._2.foreach(operation => {
@@ -147,14 +148,14 @@ class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
   }
 
   def debtPeriods(accountNumber: Int) = Action {
-    var amount = 0.0
-    var currentDebt = 0.0
+    var currentDebt: BigDecimal = 0
     var currentStart:DateTime = null
     var responseArray = List[JsObject]()
+    var balanceAmount: BigDecimal = 0
     dao.getOperations(accountNumber) match {
       case Some(dates) =>
         dates.foreach(operations => {
-          val balanceAmount = dates.map(operations => getBalanceAmountR(0.0, operations._2)).sum
+          balanceAmount = getBalanceAmountR(balanceAmount, operations._2)
           if(balanceAmount<0.0){
             if(currentStart!= null){
               if(balanceAmount!=currentDebt){
@@ -198,8 +199,9 @@ class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
     operationJson
   }
 
+  //Calculates the balance of that day
   @tailrec
-  private def getBalanceAmountR(valAmount: Double, operations: List[Operation]): Double = operations match{
+  private def getBalanceAmountR(valAmount: BigDecimal, operations: List[Operation]): BigDecimal = operations match{
     case Purchase(_, value, _, _):: tail =>getBalanceAmountR(valAmount - value, tail)
     case Deposit(_, value, _, _):: tail =>getBalanceAmountR(valAmount + value, tail)
     case Withdrawal(_, value, _, _)::tail =>getBalanceAmountR(valAmount - value, tail)

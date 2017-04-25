@@ -7,4 +7,4 @@ import play.api.libs.functional.syntax._
 /**
   * Created by Dener on 18/04/2017.
   */
-case class Purchase(accountNumber: Int, value: Double, date: DateTime, description: String) extends Operation()
+case class Purchase(accountNumber: Int, value: BigDecimal, date: DateTime, description: String) extends Operation()

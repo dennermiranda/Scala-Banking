@@ -5,6 +5,7 @@ import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 import org.scalatestplus.play._
 import org.scalatestplus.play.guice.{GuiceOneAppPerSuite, GuiceOneServerPerSuite}
+import play.api.Logger
 import play.api.libs.json.Json
 import play.api.mvc.EssentialAction
 import play.api.test.FakeRequest
@@ -15,7 +16,7 @@ import play.api.test.Helpers._
   */
 class BalancesSpec extends PlaySpec with GuiceOneAppPerSuite{
   val dateFormat = "yyyy-MM-dd"
-  val deposit = Deposit(8312, 20, DateTime.parse("2017-04-20", DateTimeFormat.forPattern(dateFormat)), "Deposit test")
+  val deposit = Deposit(8312, 20, DateTime.parse("2017-04-02", DateTimeFormat.forPattern(dateFormat)), "Deposit test")
   val withdrawal = Withdrawal(8312, 15.2, DateTime.parse("2017-04-5", DateTimeFormat.forPattern(dateFormat)), "Withdrawal test")
   val purchase = Purchase(8312, 10.2, DateTime.parse("2017-04-12", DateTimeFormat.forPattern(dateFormat)), "Purchase test")
   val purchaseS = Purchase(8313, 10.2, DateTime.parse("2017-04-12", DateTimeFormat.forPattern(dateFormat)), "Purchase test")
@@ -72,6 +73,54 @@ class BalancesSpec extends PlaySpec with GuiceOneAppPerSuite{
       val result = call(action, request)
       status(result) mustEqual OK
       contentAsString(result) must include ("8312")
+    }
+
+    "Calculate the balance" in {
+      implicit lazy val materializer: Materializer = app.materializer
+      var balanceDao = new BalancesDAO
+      balanceDao.addOperation(deposit)
+      balanceDao.addOperation(depositS)
+      balanceDao.addOperation(withdrawal)
+      val balanceController = new BalancesController(balanceDao)
+      val action: EssentialAction = balanceController.balance(8312)
+      val request = FakeRequest(GET, "/balance/8312")
+      val result = call(action, request)
+      status(result) mustEqual OK
+      contentAsString(result) must include ("4.8")
+      //Logger.debug(contentAsString(result))
+    }
+
+    "Generate the statement" in {
+      implicit lazy val materializer: Materializer = app.materializer
+      var balanceDao = new BalancesDAO
+      balanceDao.addOperation(deposit)
+      balanceDao.addOperation(depositS)
+      balanceDao.addOperation(withdrawal)
+      balanceDao.addOperation(purchase)
+      val balanceController = new BalancesController(balanceDao)
+      val action: EssentialAction = balanceController.statement(8312, "2017-04-01","2017-04-30")
+      val request = FakeRequest(GET, "/statement/8312/2017-04-20/2017-04-22")
+      val result = call(action, request)
+      status(result) mustEqual OK
+      contentAsString(result) must include ("4.8")
+      contentAsString(result) must include ("-5.4")
+      //Logger.debug(contentAsString(result))
+    }
+
+    "Generate the debt periods" in {
+      implicit lazy val materializer: Materializer = app.materializer
+      var balanceDao = new BalancesDAO
+      balanceDao.addOperation(deposit)
+      balanceDao.addOperation(depositS)
+      balanceDao.addOperation(withdrawal)
+      balanceDao.addOperation(purchase)
+      val balanceController = new BalancesController(balanceDao)
+      val action: EssentialAction = balanceController.debtPeriods(8312)
+      val request = FakeRequest(GET, "/debt/8312")
+      val result = call(action, request)
+      status(result) mustEqual OK
+      contentAsString(result) must include ("-5.4")
+      Logger.info(contentAsString(result))
     }
 
   }
