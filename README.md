@@ -2,7 +2,7 @@
 
 # Balances application in Scala using the Play Framework
 
-This application was developed using the Play Framework, SBT and Scala. Its aim is too simulate a Banking application that deals with balances
+This application was developed using the Play Framework, SBT and Scala. Its aim is to simulate a Banking application that deals with balances
 
 ## Running
 
