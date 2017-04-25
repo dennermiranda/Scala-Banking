@@ -159,7 +159,7 @@ class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
           if(balanceAmount<0.0){
             if(currentStart!= null){
               if(balanceAmount!=currentDebt){
-                val debt = Json.obj("start" -> currentStart.toString(dateFormat), "end" -> operations._1.minusDays(1).toString(dateFormat),"principal"-> currentDebt)
+                val debt = getDebtJson(currentDebt, currentStart, operations)
                 responseArray = debt :: responseArray
                 currentDebt = balanceAmount
                 currentStart = operations._1
@@ -170,9 +170,9 @@ class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
             }
           }else{
             if(currentStart!=null){
-              val debt = Json.obj("start" -> currentStart.toString(dateFormat), "end" -> operations._1.minusDays(1).toString(dateFormat),"principal"-> currentDebt)
+              val debt = getDebtJson(currentDebt, currentStart, operations)
               responseArray = debt :: responseArray
-              currentDebt = 0.0
+              currentDebt = 0
               currentStart = null
             }
           }
@@ -188,6 +188,10 @@ class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
     }
   }
 
+  private def getDebtJson(currentDebt: BigDecimal, currentStart: DateTime, operations: (DateTime, List[Operation])): JsObject = {
+    Json.obj("start" -> currentStart.toString(dateFormat), "end" -> operations._1.minusDays(1).toString(dateFormat), "principal" -> currentDebt)
+  }
+
   def getOperationJson(operation: Operation): JsObject = {
     var operationType = ""
     operation match {
@@ -195,8 +199,7 @@ class BalancesController @Inject() (dao: BalancesDAO) extends Controller{
       case Deposit(_, _, _, _) => operationType = "deposit"
       case Withdrawal(_, _, _, _) => operationType = "Withdrawal"
     }
-    val operationJson = Json.obj("type" -> operationType, "description" -> operation.description, "value" -> operation.value)
-    operationJson
+    Json.obj("type" -> operationType, "description" -> operation.description, "value" -> operation.value)
   }
 
   //Calculates the balance of that day
